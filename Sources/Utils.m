@@ -406,15 +406,75 @@ static void showCommitsForBranch(NSString *branch, UIViewController *presenter,
         }] resume];
 }
 
-void removeCachedBundle(void) {
-    NSError *error = nil;
-    [[NSFileManager defaultManager]
-        removeItemAtURL:[getPyoncordDirectory() URLByAppendingPathComponent:@"bundle.js"]
-                  error:&error];
-    if (error) {
-        KettuTweakLog(@"Failed to remove cached bundle: %@", error);
+NSURL *getBundleBackupURL(void) {
+    return [getPyoncordDirectory() URLByAppendingPathComponent:@"bundle.js.backup"];
+}
+
+void moveCachedBundleToBackup(void) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSURL *bundleURL = [getPyoncordDirectory() URLByAppendingPathComponent:@"bundle.js"];
+    NSURL *backupURL = getBundleBackupURL();
+
+    if ([fm fileExistsAtPath:backupURL.path]) {
+        NSError *removeError = nil;
+        [fm removeItemAtURL:backupURL error:&removeError];
+        if (removeError) {
+            KettuTweakLog(@"Failed to remove old backup: %@", removeError);
+        }
+    }
+
+    if ([fm fileExistsAtPath:bundleURL.path]) {
+        NSError *moveError = nil;
+        [fm moveItemAtURL:bundleURL toURL:backupURL error:&moveError];
+        if (moveError) {
+            KettuTweakLog(@"Failed to create bundle backup: %@", moveError);
+        } else {
+            KettuTweakLog(@"Successfully moved bundle to backup");
+        }
+    } else {
+        KettuTweakLog(@"No cached bundle to backup");
     }
 }
+
+BOOL restoreBundleFromBackup(void) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSURL *bundleURL = [getPyoncordDirectory() URLByAppendingPathComponent:@"bundle.js"];
+    NSURL *backupURL = getBundleBackupURL();
+
+    if ([fm fileExistsAtPath:backupURL.path]) {
+        if ([fm fileExistsAtPath:bundleURL.path]) {
+            [fm removeItemAtURL:bundleURL error:nil];
+        }
+
+        NSError *error = nil;
+        [fm moveItemAtURL:backupURL toURL:bundleURL error:&error];
+        if (error) {
+            KettuTweakLog(@"Failed to restore bundle from backup: %@", error);
+            return NO;
+        }
+        KettuTweakLog(@"Successfully restored bundle from backup");
+        return YES;
+    }
+
+    KettuTweakLog(@"No backup bundle found to restore");
+    return NO;
+}
+
+void cleanupBundleBackup(void) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    NSURL *backupURL = getBundleBackupURL();
+
+    if ([fm fileExistsAtPath:backupURL.path]) {
+        NSError *error = nil;
+        [fm removeItemAtURL:backupURL error:&error];
+        if (error) {
+            KettuTweakLog(@"Failed to cleanup backup: %@", error);
+        } else {
+            KettuTweakLog(@"Cleaned up bundle backup");
+        }
+    }
+}
+
 
 void deletePluginsAndReload(UIViewController *presenter) {
     deletePlugins();
@@ -427,6 +487,16 @@ void deleteThemesAndReload(UIViewController *presenter) {
 }
 
 void refetchBundle(UIViewController *presenter) {
-    removeCachedBundle();
+    moveCachedBundleToBackup();
     reloadApp(presenter);
+}
+
+void removeCachedBundle(void) {
+    NSError *error = nil;
+    [[NSFileManager defaultManager]
+        removeItemAtURL:[getPyoncordDirectory() URLByAppendingPathComponent:@"bundle.js"]
+                  error:&error];
+    if (error) {
+        KettuTweakLog(@"Failed to remove cached bundle: %@", error);
+    }
 }
