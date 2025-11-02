@@ -21,14 +21,6 @@ on:
         description: "Direct link to the decrypted IPA or Google Drive share link"
         required: true
         type: string
-      icon_choice:
-        description: "Icon to use for bound.ipa"
-        required: true
-        type: choice
-        options:
-          - bound_icon
-          - fallback_icon
-        default: "bound_icon"
       release:
         description: "Release the build"
         required: true
@@ -232,7 +224,7 @@ jobs:
         id: version
         run: |
           # Extract Discord version from the IPA
-          unzip -q bound.ipa
+          unzip -q discord.ipa
           VERSION=$(plutil -p Payload/*/Info.plist | grep CFBundleShortVersionString | cut -d '"' -f 4)
           TWEAK_VERSION=$(grep '^Version:' control | cut -d ' ' -f 2)
           echo "discord_version=$VERSION" >> $GITHUB_OUTPUT
@@ -291,7 +283,6 @@ jobs:
             - TrollStore compatibility  
             - Optimized for size and performance
           files: |
-            bound.ipa
             discord.ipa
             **/*-arm64.deb
           generate_release_notes: false
