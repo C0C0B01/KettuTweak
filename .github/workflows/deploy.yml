@@ -241,7 +241,7 @@ jobs:
       - name: Update Repository
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.WORKFLOW_DISPATCH_TOKEN }}
+          github-token: ${{ secrets.WORKFLOW_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
             const assets = JSON.parse('${{ steps.create_release.outputs.assets }}');
             const debAsset = assets.find(asset => asset.name === '${{ env.ROOTLESS_DEB_FILE_NAME }}');
