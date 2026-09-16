@@ -3,6 +3,10 @@
 
 @class KettuTweakSettingsViewController;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern BOOL isJailbroken;
 BOOL        isSafeModeEnabled(void);
 BOOL        restoreBundleFromBackup(void);
@@ -26,3 +30,8 @@ void        deletePluginsAndReload(UIViewController *presenter);
 void        deleteThemesAndReload(UIViewController *presenter);
 void        moveCachedBundleToBackup(void);
 void        cleanupBundleBackup(void);
+BOOL        isHermesBytecode(NSData *data);
+
+#ifdef __cplusplus
+}
+#endif

@@ -4,6 +4,6 @@
 #import "Logger.h"
 #import "Utils.h"
 
-void initializeThemeColors(NSDictionary *semanticColors, NSDictionary *rawColors);
+FOUNDATION_EXTERN void initializeThemeColors(NSDictionary *semanticColors, NSDictionary *rawColors);
 
 #define CURRENT_THEME [NSString stringWithFormat:@"%@/%@", NSHomeDirectory(), @"Documents/pyoncord/current-theme.json"]

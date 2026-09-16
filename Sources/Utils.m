@@ -5,8 +5,6 @@
 #import <spawn.h>
 #import <sys/utsname.h>
 
-extern id gBridge;
-
 BOOL isJailbroken = NO;
 
 NSURL *getPyoncordDirectory(void) {
@@ -92,15 +90,6 @@ void reloadApp(UIViewController *viewController) {
     [viewController
         dismissViewControllerAnimated:NO
                            completion:^{
-                               if (gBridge &&
-                                   [gBridge isKindOfClass:NSClassFromString(@"RCTCxxBridge")]) {
-                                   SEL reloadSelector = NSSelectorFromString(@"reload");
-                                   if ([gBridge respondsToSelector:reloadSelector]) {
-                                       ((void (*)(id, SEL))objc_msgSend)(gBridge, reloadSelector);
-                                       return;
-                                   }
-                               }
-
                                UIApplication *app = [UIApplication sharedApplication];
                                ((void (*)(id, SEL))objc_msgSend)(app, @selector(suspend));
                                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.5 * NSEC_PER_SEC),
@@ -508,4 +497,9 @@ void removeCachedBundle(void) {
     if (error) {
         BunnyLog(@"Failed to remove cached bundle: %@", error);
     }
+}
+
+BOOL isHermesBytecode(NSData *data) {
+    static const uint8_t magic[] = {0xC6, 0x1F, 0xBC, 0x03, 0xC1, 0x03, 0x19, 0x1F};
+    return data.length >= sizeof(magic) && memcmp(data.bytes, magic, sizeof(magic)) == 0;
 }

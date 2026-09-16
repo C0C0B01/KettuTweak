@@ -238,29 +238,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update Repository
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.WORKFLOW_DISPATCH_TOKEN }}
-          script: |
-            const assets = JSON.parse('${{ steps.create_release.outputs.assets }}');
-            const debAsset = assets.find(asset => asset.name === '${{ env.ROOTLESS_DEB_FILE_NAME }}');
-            
-            if (!debAsset) {
-              core.setFailed('Could not find DEB asset in release');
-              return;
-            }
-            
-            await github.rest.repos.createDispatchEvent({
-              owner: 'castdrian',
-              repo: 'apt-repo',
-              event_type: 'package-update',
-              client_payload: {
-                package_url: debAsset.browser_download_url,
-                package_name: '${{ env.ROOTLESS_DEB_FILE_NAME }}'
-              }
-            });
-
   app-repo:
     if: |
       inputs.caller_workflow != 'ci' && 

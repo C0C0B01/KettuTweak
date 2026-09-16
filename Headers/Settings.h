@@ -6,5 +6,4 @@
 - (instancetype)initWithVersion:(NSString *)version;
 @end
 
-extern id gBridge;
-void      showSettingsSheet(void);
+FOUNDATION_EXTERN void showSettingsSheet(void);

@@ -11,9 +11,11 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = KettuTweak
 BUNDLE_NAME = BunnyResources
 
-KettuTweak_FILES = $(wildcard Sources/*.x Sources/*.m Sources/**/*.x Sources/**/*.m)
+KettuTweak_FILES = $(wildcard Sources/*.x Sources/*.xm Sources/*.m Sources/*.mm Sources/**/*.x Sources/**/*.xm Sources/**/*.m Sources/**/*.mm)
 KettuTweak_CFLAGS = -fobjc-arc -DPACKAGE_VERSION='@"$(THEOS_PACKAGE_BASE_VERSION)"' -I$(THEOS_PROJECT_DIR)/Headers
+KettuTweak_CCFLAGS = -std=c++17 -Wno-c++11-narrowing
 KettuTweak_FRAMEWORKS = Foundation UIKit CoreGraphics CoreText CoreFoundation UniformTypeIdentifiers
+KettuTweak_LDFLAGS = -undefined dynamic_lookup
 
 BunnyResources_INSTALL_PATH = "/Library/Application\ Support/"
 BunnyResources_RESOURCE_DIRS = Resources

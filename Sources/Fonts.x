@@ -198,6 +198,16 @@ void patchFonts(NSDictionary<NSString *, NSString *> *mainFonts, NSString *fontD
     @autoreleasepool
     {
         fontMap = [NSMutableDictionary dictionary];
+
+        NSData *fontData = [NSData
+            dataWithContentsOfURL:[getPyoncordDirectory() URLByAppendingPathComponent:@"fonts.json"]];
+        NSDictionary *fontDict =
+            fontData ? [NSJSONSerialization JSONObjectWithData:fontData options:0 error:nil] : nil;
+        if ([fontDict isKindOfClass:[NSDictionary class]] && fontDict[@"main"])
+        {
+            patchFonts(fontDict[@"main"], fontDict[@"name"]);
+        }
+
         BunnyLog(@"Font hooks initialized");
         %init;
     }

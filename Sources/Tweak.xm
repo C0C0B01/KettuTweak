@@ -1,32 +1,26 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
-#import "Fonts.h"
+#import "JSI.h"
 #import "LoaderConfig.h"
 #import "Logger.h"
+#import "RCTHost.h"
 #import "Settings.h"
 #import "Themes.h"
 #import "Utils.h"
 
-static NSURL         *source;
+static NSString      *source = @"kettu";
 static NSString      *bunnyPatchesBundlePath;
 static NSURL         *pyoncordDirectory;
 static LoaderConfig  *loaderConfig;
 static NSTimeInterval shakeStartTime = 0;
 static BOOL           isShaking      = NO;
-id                    gBridge        = nil;
 
-%hook RCTCxxBridge
+%hook RCTHost
 
-- (void)executeApplicationScript:(NSData *)script url:(NSURL *)url async:(BOOL)async
+- (void)instance:(id)instance didInitializeRuntime:(facebook::jsi::Runtime &)runtime
 {
-    if (![url.absoluteString containsString:@"main.jsbundle"])
-    {
-        return %orig;
-    }
-
-    gBridge = self;
-    BunnyLog(@"Stored bridge reference: %@", gBridge);
+    %orig;
 
     NSBundle *bunnyPatchesBundle = [NSBundle bundleWithPath:bunnyPatchesBundlePath];
     if (!bunnyPatchesBundle)
@@ -34,7 +28,7 @@ id                    gBridge        = nil;
         BunnyLog(@"Failed to load BunnyPatches bundle from path: %@", bunnyPatchesBundlePath);
         showErrorAlert(@"Loader Error",
                        @"Failed to initialize mod loader. Please reinstall the tweak.", nil);
-        return %orig;
+        return;
     }
 
     NSURL *patchPath = [bunnyPatchesBundle URLForResource:@"payload-base" withExtension:@"js"];
@@ -43,12 +37,12 @@ id                    gBridge        = nil;
         BunnyLog(@"Failed to find payload-base.js in bundle");
         showErrorAlert(@"Loader Error",
                        @"Failed to initialize mod loader. Please reinstall the tweak.", nil);
-        return %orig;
+        return;
     }
 
     NSData *patchData = [NSData dataWithContentsOfURL:patchPath];
     BunnyLog(@"Injecting loader");
-    %orig(patchData, source, YES);
+    [JSI evaluate:patchData tag:source runtime:runtime];
 
     __block NSData *bundle =
         [NSData dataWithContentsOfURL:[pyoncordDirectory URLByAppendingPathComponent:@"bundle.js"]];
@@ -181,7 +175,9 @@ id                    gBridge        = nil;
                 [NSString stringWithFormat:@"globalThis.__PYON_LOADER__.storedTheme=%@",
                                            [[NSString alloc] initWithData:themeData
                                                                  encoding:NSUTF8StringEncoding]];
-            %orig([jsCode dataUsingEncoding:NSUTF8StringEncoding], source, async);
+            [JSI evaluate:[jsCode dataUsingEncoding:NSUTF8StringEncoding]
+                      tag:source
+                  runtime:runtime];
         }
         else
         {
@@ -194,25 +190,10 @@ id                    gBridge        = nil;
                  [pyoncordDirectory URLByAppendingPathComponent:@"current-theme.json"]);
     }
 
-    NSData *fontData = [NSData
-        dataWithContentsOfURL:[pyoncordDirectory URLByAppendingPathComponent:@"fonts.json"]];
-    if (fontData)
-    {
-        NSError      *jsonError;
-        NSDictionary *fontDict = [NSJSONSerialization JSONObjectWithData:fontData
-                                                                 options:0
-                                                                   error:&jsonError];
-        if (!jsonError && fontDict[@"main"])
-        {
-            BunnyLog(@"Found font configuration, applying...");
-            patchFonts(fontDict[@"main"], fontDict[@"name"]);
-        }
-    }
-
     if (bundle)
     {
         BunnyLog(@"Executing JS bundle");
-        %orig(bundle, source, async);
+        [JSI evaluate:bundle tag:source runtime:runtime];
     }
     else
     {
@@ -242,7 +223,7 @@ id                    gBridge        = nil;
                     NSData *data = [NSData dataWithContentsOfURL:fileURL];
                     if (data)
                     {
-                        %orig(data, source, async);
+                        [JSI evaluate:data tag:source runtime:runtime];
                     }
                 }
             }
@@ -252,8 +233,6 @@ id                    gBridge        = nil;
             BunnyLog(@"Error reading contents of preloads directory");
         }
     }
-
-    %orig(script, url, async);
 }
 
 %end
@@ -292,8 +271,6 @@ id                    gBridge        = nil;
 {
     @autoreleasepool
     {
-        source = [NSURL URLWithString:@"kettu"];
-
         NSString *install_prefix = @"/var/jb";
         isJailbroken             = [[NSFileManager defaultManager] fileExistsAtPath:install_prefix];
         BOOL jbPathExists        = [[NSFileManager defaultManager] fileExistsAtPath:install_prefix];
